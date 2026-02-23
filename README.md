@@ -1,29 +1,8 @@
 # Mobile Log
 
-A chat-first mobile logging app built with [Tambo](https://tambo.co) and Expo. Each Tambo thread is a "log" — the AI asks contextual follow-up questions about each entry, rendered as tappable multiple-choice buttons. Answers are stored naturally in the conversation history.
+A demo Expo/React Native app showing how to integrate `@tambo-ai/react` on mobile. It's a simple activity logger where each Tambo thread is a conversation-style log entry.
 
-Great for logging activities like cooking, woodworking, hiking, repairs, and other hands-on projects where typing on mobile is tedious.
-
-## How it works
-
-1. Tap **+** to start a new log
-2. Describe what you're working on (or snap a photo)
-3. The AI asks follow-up questions — some as tappable buttons, some as free text
-4. After a few exchanges, it summarizes a structured log entry
-
-### The "Prompt Tools" pattern
-
-The app uses a pattern where the AI calls tools that render as interactive UI. The tool returns a Promise that **blocks until the user taps an answer**:
-
-```
-AI calls: ask_multiple_choice({ question: "What technique?", options: ["Sautéing", "Braising", "Grilling"] })
-  → Renders tappable buttons
-  → User taps "Braising"
-  → Promise resolves, result sent back to AI
-  → AI continues the conversation
-```
-
-See `lib/tools.ts` for the implementation.
+Expo 54 / React Native 0.81 / React 19.
 
 ## Setup
 
@@ -31,28 +10,87 @@ See `lib/tools.ts` for the implementation.
 npm install
 ```
 
-Create a `.env` file with your Tambo API key:
+Create a `.env` file:
 
 ```
 EXPO_PUBLIC_TAMBO_API_KEY=your_key_here
 ```
 
-## Running
+Run:
 
 ```sh
 npx expo start
 ```
 
-Press `i` for iOS simulator or `a` for Android emulator.
+## Tambo integration
 
-## React Native polyfills
+### Provider setup (`app/_layout.tsx`)
 
-`@tambo-ai/react` targets web by default. This app polyfills several APIs that React Native's JS runtime doesn't provide (see `lib/polyfills.ts`):
+Standard `TamboProvider` wrapping the app, with tools and initial messages passed in. A random `userKey` is generated on first launch and persisted with AsyncStorage.
 
-- **`crypto.randomUUID()` / `crypto.getRandomValues()`** — via `expo-crypto`
-- **`Event` / `EventTarget`** — needed by the `eventsource` package for SSE streaming
-- **`fetch` with streaming support** — React Native's built-in fetch doesn't support readable streams; replaced with `expo/fetch`
-- **`react-dom` / `react-media-recorder`** — stubbed out in `metro.config.js` (web-only deps)
+### Rendering the chat UI
+
+Since `@tambo-ai/react`'s built-in components render HTML elements, this app renders everything with React Native primitives (`View`, `Text`, `Pressable`, `FlatList`).
+
+The message renderer (`components/log-entry.tsx`) switches on the content block type:
+
+- **`text`** — chat bubble (`View` + `Text`)
+- **`tool_use`** — interactive UI (e.g. `QuickAnswer` with tappable `Pressable` buttons)
+- **`resource`** — inline image via RN `Image`
+- **`tool_result`** — skipped (rendered inline with the corresponding `tool_use`)
+
+The chat screen (`app/log/[id].tsx`) uses an inverted `FlatList` with `KeyboardAvoidingView`.
+
+### Thread management
+
+- `useTamboThreadList` powers the log list screen
+- `useTambo` provides `messages`, `startNewThread`, and `switchThread` for the chat screen
+- `useTamboThreadInput` handles the input bar state and submission
+
+### Blocking prompt tools (`lib/tools.ts`)
+
+The app defines a `ask_multiple_choice` tool whose executor returns a Promise that blocks until the user taps an answer. The SDK's tool executor `await`s tool functions, so a pending Promise simply pauses execution. Meanwhile, the `tool_use` content block streams in and the message renderer shows tappable buttons. When the user taps one, `resolvePrompt()` resolves the Promise and the conversation continues.
+
+## Making `@tambo-ai/react` work on React Native
+
+The SDK targets web browsers. Several things are needed to run it in React Native's JS runtime.
+
+### Polyfills (`lib/polyfills.ts`)
+
+Imported at the top of `app/_layout.tsx` before any SDK code loads:
+
+| API | Why it's needed | Polyfill |
+|-----|----------------|----------|
+| `crypto.randomUUID()` / `getRandomValues()` | SDK generates IDs throughout | `expo-crypto` |
+| `Event` / `EventTarget` | The `eventsource` package (SSE streaming) extends these | Minimal class polyfills |
+| `fetch` with streaming body | SDK reads SSE response as a stream; RN's built-in fetch doesn't support `ReadableStream` on the response body | `expo/fetch` replaces `globalThis.fetch` |
+
+### Metro config (`metro.config.js`)
+
+Two web-only dependencies are stubbed out so Metro doesn't try to bundle them:
+
+- `react-dom` — peer dependency of the SDK, unused on mobile
+- `react-media-recorder` — direct dependency for `useTamboVoice`, not applicable to RN
+
+```js
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === "react-dom" || moduleName === "react-media-recorder") {
+    return { type: "empty" };
+  }
+  // ...
+};
+```
+
+### npm overrides (`package.json`)
+
+The SDK lists `react-dom` as a peer dependency, which pulls in a version incompatible with the React version Expo pins. Since we don't use react-dom at all, overrides prevent the resolution conflict:
+
+```json
+"overrides": {
+  "react-dom": "$react",
+  "@types/react-dom": { "@types/react": "$@types/react" }
+}
+```
 
 ## Project structure
 
@@ -60,20 +98,14 @@ Press `i` for iOS simulator or `a` for Android emulator.
 app/
   _layout.tsx          TamboProvider + Stack navigator
   index.tsx            Log list (thread list)
-  log/[id].tsx         Single log view (chat screen)
+  log/[id].tsx         Chat screen (single log)
 components/
-  log-entry.tsx        Message renderer (text, tool_use, resource)
-  quick-answer.tsx     Multiple-choice buttons
-  input-bar.tsx        Text input + send button
+  log-entry.tsx        Message content renderer
+  quick-answer.tsx     Multiple-choice button UI
+  input-bar.tsx        Text input + send
 lib/
-  polyfills.ts         React Native polyfills for web APIs
-  tools.ts             ask_multiple_choice tool + resolvePrompt()
+  polyfills.ts         Web API polyfills for RN runtime
+  tools.ts             Tool definitions + resolvePrompt()
   system-prompt.ts     System prompt and initial messages
+metro.config.js        Stubs for web-only dependencies
 ```
-
-## Stack
-
-- [Expo](https://expo.dev) 54 / React Native 0.81
-- [React](https://react.dev) 19
-- [@tambo-ai/react](https://www.npmjs.com/package/@tambo-ai/react) SDK
-- [Expo Router](https://docs.expo.dev/router/introduction/) for navigation
