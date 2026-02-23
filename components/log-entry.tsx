@@ -52,7 +52,10 @@ function ContentBlock({
   }
 
   if (block.type === "tool_use" && block.name === "ask_multiple_choice") {
-    const input = block.input as { question: string; options: string[] };
+    const input = block.input as { question?: string; options?: string[] };
+
+    // Wait until streaming has populated the args
+    if (!input.question || !input.options) return null;
 
     // Find matching tool_result to determine if already answered
     const toolResult = allContent.find(

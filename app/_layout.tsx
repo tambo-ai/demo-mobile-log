@@ -1,7 +1,9 @@
+import "../lib/polyfills";
 import { useEffect, useState } from "react";
 import { Stack } from "expo-router";
 import { TamboProvider } from "@tambo-ai/react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { randomUUID } from "expo-crypto";
 import { tools } from "../lib/tools";
 import { initialMessages } from "../lib/system-prompt";
 
@@ -15,7 +17,7 @@ export default function RootLayout() {
     async function getOrCreateUserKey() {
       let key = await AsyncStorage.getItem(USER_KEY_STORAGE);
       if (!key) {
-        key = crypto.randomUUID();
+        key = randomUUID();
         await AsyncStorage.setItem(USER_KEY_STORAGE, key);
       }
       setUserKey(key);
