@@ -5,7 +5,7 @@ import {
   Platform,
   StyleSheet,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useTambo } from "@tambo-ai/react";
 import { LogEntry } from "../../components/log-entry";
 import { InputBar } from "../../components/input-bar";
@@ -13,14 +13,21 @@ import { InputBar } from "../../components/input-bar";
 export default function LogScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { messages, switchThread, startNewThread } = useTambo();
+  const navigation = useNavigation();
 
+  // Start a new thread or switch to an existing one.
+  // We listen to the navigation focus event so that navigating to /log/new
+  // a second time still triggers startNewThread (the route params don't change).
   useEffect(() => {
-    if (id === "new") {
-      startNewThread();
-    } else if (id) {
-      switchThread(id);
-    }
-  }, [id, switchThread, startNewThread]);
+    const unsubscribe = navigation.addListener("focus", () => {
+      if (id === "new") {
+        startNewThread();
+      } else if (id) {
+        switchThread(id);
+      }
+    });
+    return unsubscribe;
+  }, [id, navigation, switchThread, startNewThread]);
 
   // Filter out system messages and reverse so newest is first (inverted FlatList)
   const displayMessages = messages
