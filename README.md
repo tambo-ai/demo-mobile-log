@@ -36,7 +36,7 @@ The message renderer (`components/log-entry.tsx`) switches on the content block 
 
 - **`text`** — chat bubble (`View` + `Text`)
 - **`tool_use`** — interactive UI (e.g. `QuickAnswer` with tappable `Pressable` buttons)
-- **`resource`** — inline image via RN `Image`
+- **`resource`** — inline image via React Native `Image`
 - **`tool_result`** — skipped (rendered inline with the corresponding `tool_use`)
 
 The chat screen (`app/log/[id].tsx`) uses an inverted `FlatList` with `KeyboardAvoidingView`.
@@ -53,7 +53,7 @@ The app defines a `ask_multiple_choice` tool whose executor returns a Promise th
 
 ## Making `@tambo-ai/react` work on React Native
 
-The SDK targets web browsers. Several things are needed to run it in React Native's JS runtime.
+The SDK targets web browsers. Several things are needed to make it work in React Native's JavaScript runtime.
 
 ### Polyfills (`lib/polyfills.ts`)
 
@@ -63,14 +63,14 @@ Imported at the top of `app/_layout.tsx` before any SDK code loads:
 |-----|----------------|----------|
 | `crypto.randomUUID()` / `getRandomValues()` | SDK generates IDs throughout | `expo-crypto` |
 | `Event` / `EventTarget` | The `eventsource` package (SSE streaming) extends these | Minimal class polyfills |
-| `fetch` with streaming body | SDK reads SSE response as a stream; RN's built-in fetch doesn't support `ReadableStream` on the response body | `expo/fetch` replaces `globalThis.fetch` |
+| `fetch` with streaming body | SDK reads SSE response as a stream; React Native's built-in fetch doesn't support `ReadableStream` on the response body | `expo/fetch` replaces `globalThis.fetch` |
 
 ### Metro config (`metro.config.js`)
 
 Two web-only dependencies are stubbed out so Metro doesn't try to bundle them:
 
 - `react-dom` — peer dependency of the SDK, unused on mobile
-- `react-media-recorder` — direct dependency for `useTamboVoice`, not applicable to RN
+- `react-media-recorder` — web-only direct dependency of the SDK
 
 ```js
 config.resolver.resolveRequest = (context, moduleName, platform) => {
@@ -104,7 +104,7 @@ components/
   quick-answer.tsx     Multiple-choice button UI
   input-bar.tsx        Text input + send
 lib/
-  polyfills.ts         Web API polyfills for RN runtime
+  polyfills.ts         Web API polyfills for React Native runtime
   tools.ts             Tool definitions + resolvePrompt()
   system-prompt.ts     System prompt and initial messages
 metro.config.js        Stubs for web-only dependencies
