@@ -5,6 +5,7 @@ import { TamboProvider } from "@tambo-ai/react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { randomUUID } from "expo-crypto";
 import { tools } from "../lib/tools";
+import { components } from "../lib/components";
 import { initialMessages } from "../lib/system-prompt";
 
 const TAMBO_API_KEY = process.env.EXPO_PUBLIC_TAMBO_API_KEY ?? "";
@@ -32,6 +33,7 @@ export default function RootLayout() {
       apiKey={TAMBO_API_KEY}
       userKey={userKey}
       tools={tools}
+      components={components}
       initialMessages={initialMessages}
     >
       <Stack
