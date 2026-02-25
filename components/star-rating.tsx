@@ -1,30 +1,21 @@
-import { useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
+import { useTamboComponentState } from "@tambo-ai/react";
 
 interface StarRatingProps {
   question: string;
   maxStars?: number;
-  selectedRating?: number;
-  onRate?: (rating: number) => void;
 }
 
-export function StarRating({
-  question,
-  maxStars = 5,
-  selectedRating,
-  onRate,
-}: StarRatingProps) {
-  const [localRating, setLocalRating] = useState<number | undefined>(
-    selectedRating,
+export function StarRating({ question, maxStars = 5 }: StarRatingProps) {
+  const [rating, setRating] = useTamboComponentState<number | null>(
+    "rating",
+    null,
   );
 
-  const rating = selectedRating ?? localRating;
-  const isAnswered = rating !== undefined;
+  const hasRating = rating != null;
 
   function handlePress(star: number) {
-    if (isAnswered) return;
-    setLocalRating(star);
-    onRate?.(star);
+    setRating(star);
   }
 
   return (
@@ -35,17 +26,13 @@ export function StarRating({
           <Pressable
             key={star}
             onPress={() => handlePress(star)}
-            disabled={isAnswered}
             style={styles.starButton}
           >
             <Text
               style={[
                 styles.star,
-                rating !== undefined && star <= rating && styles.starFilled,
-                isAnswered &&
-                  rating !== undefined &&
-                  star > rating &&
-                  styles.starDimmed,
+                hasRating && star <= rating && styles.starFilled,
+                hasRating && star > rating && styles.starDimmed,
               ]}
             >
               ★
@@ -53,7 +40,7 @@ export function StarRating({
           </Pressable>
         ))}
       </View>
-      {isAnswered && (
+      {hasRating && (
         <Text style={styles.ratingLabel}>
           {rating} / {maxStars}
         </Text>

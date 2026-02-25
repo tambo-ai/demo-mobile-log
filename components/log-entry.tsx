@@ -5,7 +5,7 @@ import type {
   ToolResultContent,
   TamboComponentContent,
 } from "@tambo-ai/react";
-import { ComponentRenderer } from "@tambo-ai/react";
+import { ComponentRenderer, useTambo } from "@tambo-ai/react";
 import { QuickAnswer } from "./quick-answer";
 import { resolvePrompt } from "../lib/tools";
 
@@ -14,6 +14,8 @@ interface LogEntryProps {
 }
 
 export function LogEntry({ message }: LogEntryProps) {
+  const { currentThreadId } = useTambo();
+
   if (message.role === "system") return null;
 
   const isUser = message.role === "user";
@@ -27,6 +29,7 @@ export function LogEntry({ message }: LogEntryProps) {
           isUser={isUser}
           allContent={message.content}
           messageId={message.id}
+          threadId={currentThreadId}
         />
       ))}
     </View>
@@ -38,11 +41,13 @@ function ContentBlock({
   isUser,
   allContent,
   messageId,
+  threadId,
 }: {
   block: Content;
   isUser: boolean;
   allContent: Content[];
   messageId: string;
+  threadId: string;
 }) {
   if (block.type === "text" && block.text.trim()) {
     return (
@@ -116,7 +121,7 @@ function ContentBlock({
       <View style={styles.toolContainer}>
         <ComponentRenderer
           content={componentContent}
-          threadId=""
+          threadId={threadId}
           messageId={messageId}
           fallback={<Text style={styles.text}>Loading component...</Text>}
         />
