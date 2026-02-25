@@ -3,7 +3,9 @@ import type {
   TamboThreadMessage,
   Content,
   ToolResultContent,
+  TamboComponentContent,
 } from "@tambo-ai/react";
+import { ComponentRenderer } from "@tambo-ai/react";
 import { QuickAnswer } from "./quick-answer";
 import { resolvePrompt } from "../lib/tools";
 
@@ -24,6 +26,7 @@ export function LogEntry({ message }: LogEntryProps) {
           block={block}
           isUser={isUser}
           allContent={message.content}
+          messageId={message.id}
         />
       ))}
     </View>
@@ -34,10 +37,12 @@ function ContentBlock({
   block,
   isUser,
   allContent,
+  messageId,
 }: {
   block: Content;
   isUser: boolean;
   allContent: Content[];
+  messageId: string;
 }) {
   if (block.type === "text" && block.text.trim()) {
     return (
@@ -103,6 +108,20 @@ function ContentBlock({
         />
       );
     }
+  }
+
+  if (block.type === "component") {
+    const componentContent = block as TamboComponentContent;
+    return (
+      <View style={styles.toolContainer}>
+        <ComponentRenderer
+          content={componentContent}
+          threadId=""
+          messageId={messageId}
+          fallback={<Text style={styles.text}>Loading component...</Text>}
+        />
+      </View>
+    );
   }
 
   // Skip tool_result blocks (rendered inline with tool_use)
