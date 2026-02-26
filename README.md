@@ -2,7 +2,7 @@
 
 A demo Expo/React Native app showing how to integrate `@tambo-ai/react` on mobile. It's a simple activity logger where each Tambo thread is a conversation-style log entry.
 
-Expo 54 / React Native 0.81 / React 19.
+Expo 55 / React Native 0.83 / React 19.
 
 ## Setup
 
