@@ -2,7 +2,7 @@
 
 A demo Expo/React Native app showing how to integrate `@tambo-ai/react` on mobile. It's a simple activity logger where each Tambo thread is a conversation-style log entry.
 
-Expo 54 / React Native 0.81 / React 19.
+Expo 55 / React Native 0.83 / React 19.
 
 ## Setup
 
@@ -72,9 +72,11 @@ Imported at the top of `app/_layout.tsx` before any SDK code loads:
 | API | Why it's needed | Polyfill |
 |-----|----------------|----------|
 | `crypto.randomUUID()` / `getRandomValues()` | SDK generates IDs throughout | `expo-crypto` |
-| `Array.prototype.toSorted()` | SDK's event accumulator uses this ES2023 method; Hermes (Expo 54) doesn't support it yet — available natively in Hermes v1 (Expo 55+) | `[...arr].sort()` shim |
+| `Array.prototype.toSorted()` | SDK's event accumulator uses this ES2023 method; not available in default Hermes | `[...arr].sort()` shim |
 | `Event` / `EventTarget` | The `eventsource` package (SSE streaming) extends these | Minimal class polyfills |
 | `fetch` with streaming body | SDK reads SSE response as a stream; React Native's built-in fetch doesn't support `ReadableStream` on the response body | `expo/fetch` replaces `globalThis.fetch` |
+
+All polyfills use runtime guards (`if (!...)`) so they become no-ops if the runtime already provides the API. If you opt in to Hermes v1 (available in Expo 55), the `toSorted` and `Event`/`EventTarget` polyfills will be skipped automatically.
 
 ### Metro config (`metro.config.js`)
 
