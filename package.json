@@ -34,7 +34,8 @@
     "react-dom": "$react",
     "@types/react-dom": {
       "@types/react": "$@types/react"
-    }
+    },
+    "picomatch": ">=4.0.4"
   },
   "private": true
 }
