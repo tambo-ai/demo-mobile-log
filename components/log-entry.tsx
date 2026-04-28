@@ -3,7 +3,9 @@ import type {
   TamboThreadMessage,
   Content,
   ToolResultContent,
+  TamboComponentContent,
 } from "@tambo-ai/react";
+import { ComponentRenderer, useTambo } from "@tambo-ai/react";
 import { QuickAnswer } from "./quick-answer";
 import { resolvePrompt } from "../lib/tools";
 
@@ -12,6 +14,8 @@ interface LogEntryProps {
 }
 
 export function LogEntry({ message }: LogEntryProps) {
+  const { currentThreadId } = useTambo();
+
   if (message.role === "system") return null;
 
   const isUser = message.role === "user";
@@ -24,6 +28,8 @@ export function LogEntry({ message }: LogEntryProps) {
           block={block}
           isUser={isUser}
           allContent={message.content}
+          messageId={message.id}
+          threadId={currentThreadId}
         />
       ))}
     </View>
@@ -34,10 +40,14 @@ function ContentBlock({
   block,
   isUser,
   allContent,
+  messageId,
+  threadId,
 }: {
   block: Content;
   isUser: boolean;
   allContent: Content[];
+  messageId: string;
+  threadId: string;
 }) {
   if (block.type === "text" && block.text.trim()) {
     return (
@@ -103,6 +113,20 @@ function ContentBlock({
         />
       );
     }
+  }
+
+  if (block.type === "component") {
+    const componentContent = block as TamboComponentContent;
+    return (
+      <View style={styles.toolContainer}>
+        <ComponentRenderer
+          content={componentContent}
+          threadId={threadId}
+          messageId={messageId}
+          fallback={<Text style={styles.text}>Loading component...</Text>}
+        />
+      </View>
+    );
   }
 
   // Skip tool_result blocks (rendered inline with tool_use)

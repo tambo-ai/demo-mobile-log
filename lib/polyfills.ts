@@ -20,6 +20,16 @@ if (!globalThis.crypto.getRandomValues) {
   globalThis.crypto.getRandomValues = getRandomValues;
 }
 
+// Array.prototype.toSorted – ES2023, not available in default Hermes.
+// Available natively with Hermes v1 (opt-in in Expo 55).
+// Used by @tambo-ai/react's event-accumulator.
+if (!Array.prototype.toSorted) {
+  // eslint-disable-next-line no-extend-native
+  Array.prototype.toSorted = function (compareFn?: (a: any, b: any) => number) {
+    return [...this].sort(compareFn);
+  };
+}
+
 if (typeof globalThis.Event === "undefined") {
   // @ts-expect-error minimal polyfill
   globalThis.Event = class Event {
